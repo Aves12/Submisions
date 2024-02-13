@@ -1,0 +1,46 @@
+import requests
+from bs4 import BeautifulSoup
+
+url = "https://hprera.nic.in/PublicDashboard"
+
+def get_project_details(project_url):
+    response = requests.get(project_url)
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    # Extracting required details from the project page
+    gstin = soup.find("span", {"id": "ContentPlaceHolder1_lblGstin"})
+    pan = soup.find("span", {"id": "ContentPlaceHolder1_lblPan"})
+    name = soup.find("span", {"id": "ContentPlaceHolder1_lblProjectName"})
+    address = soup.find("span", {"id": "ContentPlaceHolder1_lblAddress"})
+
+    return {
+        "GSTIN No": gstin.text.strip() if gstin else "N/A",
+        "PAN No": pan.text.strip() if pan else "N/A",
+        "Name": name.text.strip() if name else "N/A",
+        "Permanent Address": address.text.strip() if address else "N/A",
+    }
+
+def scrape_projects_list(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    projects = []
+
+    # Finding the first 5 projects under the "Registered Projects" heading
+    project_links = soup.select(".panel-body .list-group-item a")[:5]
+    for link in project_links:
+        project_url = url + link.get("href")
+        project_details = get_project_details(project_url)
+        projects.append(project_details)
+
+    return projects
+
+if __name__ == "__main__":
+    registered_projects = scrape_projects_list(url)
+
+    # Displaying the details of the first 5 projects
+    for i, project in enumerate(registered_projects, start=1):
+        print(f"\nProject {i} Details:")
+        for field, value in project.items():
+            print(f"{field}: {value}")
+
